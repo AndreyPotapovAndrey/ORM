@@ -34,11 +34,33 @@ create_tables(engine)
 
 # Как заполнить через скрипт ORM таблицы "stock" и "sale" я так и не понял. Если есть возможность пояснить, был бы очень признателен.
 
-name = input('Введите название издательства: ')
+def get_shops(id_or_name):  # Функция принимает обязательный параметр
+    request = session.query(  # Создаем общее тело запроса на выборку данных и сохраняем в переменную
+        Book.title, Shop.name, Sale.price, Sale.date_sale,
+        # Название книги, имя магазина, стоимость продажи и дату продажи
+    ).select_from(Shop). \
+        join(Stock, Stock.shop_id == Shop.id). \
+        join(Book, Book.id == Stock.book_id). \
+        join(Publisher, Publisher.id == Book.publisher_id). \
+        join(Sale, Sale.stock_id == Stock.id)
 
-for i in session.query(Book.title, Shop.name, Sale.price, Sale.date_sale) \
-        .join(Publisher).join(Stock).join(Shop).join(Sale).filter(Publisher.name == name).all():
-    name_book, name_shop, i_price, i_data = i
-    print(f'{name_book: <20} | {name_shop: >15} | {i_price: >5} | {i_data}')
+    print(f'{"Book": ^40} | {"Shop": ^10} | {"Price": ^8} | {"Date": ^10}')
+    if id_or_name.isdigit():
+        request = request.filter(Publisher.id == id_or_name).all()
+        for book_title, shop_name, price, date_sale in request:
+            print(f'{book_title: <40} | {shop_name: <10} | '
+                  f'{price: < 8} | {date_sale.strftime("%d-%m-%Y")}')
+    else:
+        request = request.filter(Publisher.name == id_or_name).all()
+        for book_title, shop_name, price, date_sale in request:
+            print(f'{book_title: <40} | {shop_name: <10} | '
+                  f'{price: < 8} | {date_sale.strftime("%d-%m-%Y")}')
 
+if __name__ == '__main__':
+        create_tables(engine)
+    id_or_name = input(
+        "Введите id или название издательства: ")  # Просим клиента ввести имя или айди публициста и данные сохраняем в переменную
+    print(get_shops(
+        id_or_name))  # Вызываем функцию получения данных из базы, передавая в функцию данные, которые ввел пользователь строкой выше
+        
 session.close
